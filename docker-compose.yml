@@ -1,0 +1,116 @@
+x-app-build: &app-build
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+x-app-env: &app-env
+  env_file:
+    - .env
+  environment:
+    - DJANGO_SETTINGS_MODULE=events_app.settings
+    - PYTHONUNBUFFERED=1
+    - PYTHONPATH=/app
+  restart: unless-stopped
+
+x-app-volumes: &app-volumes
+  volumes:
+    - ./events_app:/app/events_app:ro
+    - ./events:/app/events:ro
+    - ./manage.py:/app/manage.py:ro
+
+services:
+  web:
+    <<: [*app-build, *app-env, *app-volumes]
+    container_name: events_app_web
+    ports:
+      - '8000:8000'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - static_data:/app/staticfiles
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    networks:
+      - backend
+
+  celery:
+    <<: [*app-build, *app-env, *app-volumes]
+    container_name: events_app_celery
+    command: sh -c "sleep 10 && python -m celery -A events_app worker --loglevel=info"
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    networks:
+      - backend
+    user: '1000:1000'
+
+  redis:
+    image: redis:7-alpine
+    container_name: events_app_redis
+    expose:
+      - 6379
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    networks:
+      - backend
+
+  db:
+    <<: *app-env
+    image: postgres:13-alpine
+    container_name: events_app_db
+    expose:
+      - 5432
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --lc-collate=C --lc-ctype=C
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER} -d ${DB_NAME}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    networks:
+      - backend
+
+networks:
+  frontend:
+  backend:
+
+volumes:
+  redis_data:
+    driver: local
+  db_data:
+    driver: local
+  static_data:
+    driver: local

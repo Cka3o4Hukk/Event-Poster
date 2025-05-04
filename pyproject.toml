@@ -1,0 +1,88 @@
+[tool.poetry]
+name = "events_app"
+version = "0.1.0"
+description = "Event management application"
+authors = ["Alex"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4.0"
+Django = "==4.2.11"
+djangorestframework = "==3.14.0"
+psycopg2-binary = "==2.9.10"
+celery = "==5.3.6"
+redis = "==4.5.4"
+django-filter = "==23.2"
+python-dotenv = "==1.0.0"
+amqp = "==5.3.1"
+asgiref = "==3.8.1"
+kombu = "==5.5.3"
+pytest = "==8.3.5"
+pytest-django = "==4.11.1"
+python-dateutil = "==2.9.0.post0"
+pytz = "==2025.2"
+sqlparse = "==0.5.3"
+gunicorn = "==20.1.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.11.8"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.ruff]
+target-version = "py39"
+
+line-length = 88
+
+select = [
+    "E",
+    "W",
+    "F",  
+    "I", 
+    "N", 
+    "C", 
+    "B",  
+    "A", 
+    "COM", 
+    "DTZ", 
+    "T10",
+    "T20",
+    "S",
+    "G",
+    "RUF",
+]
+
+ignore = [
+    "B017",
+    "S101",
+    "S106",
+    "G004",
+    "RUF002",
+    "RUF012",
+
+    "W291", 
+    "W292",
+]
+
+exclude = [
+    "migrations",
+    "tests",
+    "**/settings.py"
+]
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["events"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
